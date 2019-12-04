@@ -32,6 +32,8 @@ NSOPTION_BOOL(downloads_clear, false)
 /* prompt before overwriting downloads */
 NSOPTION_BOOL(request_overwrite, true)
 
+NSOPTION_BOOL(enable_javascript, true)
+
 #if 0
 /* location to download files to */
 NSOPTION_STRING(downloads_directory, NULL)

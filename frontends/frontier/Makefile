@@ -6,7 +6,7 @@
 CFLAGS += -std=c99 -Dnsfrontier -g -O0
 CFLAGS += -I$(PREFIX)/include -fsanitize=address -fsanitize-address-use-after-scope
 
-CXXFLAGS += -Dnsfrontier -g -O0
+CXXFLAGS += -Dnsfrontier -g -O0 -std=c++17
 CXXFLAGS += -I$(PREFIX)/include `pkg-config libfrontier --cflags` -fsanitize=address
 
 LDFLAGS += `pkg-config libfrontier --libs` -lstdc++ -fsanitize=address

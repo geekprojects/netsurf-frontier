@@ -16,6 +16,7 @@ extern "C" {
 
 using namespace Frontier;
 using namespace Geek;
+using namespace Geek::Gfx;
 using namespace std;
 
 NetSurfWindow::NetSurfWindow(NetSurfApp* app) : FrontierWindow(app, L"NetSurf Browser", WINDOW_NORMAL)
@@ -35,7 +36,7 @@ bool NetSurfWindow::init()
     m_tabs = new Tabs(this);
 
     m_tab = new Frame(this, false);
-    m_tabs->addTab(L"Tab 1", m_tab);
+    m_tabs->addTab(L"Tab 1", m_tab, true);
 
     Frame* navFrame = new Frame(this, true);
     m_tab->add(navFrame);
@@ -50,7 +51,7 @@ bool NetSurfWindow::init()
     Frame* browserFrame = new Frame(this, true);
     m_browserWidget = new BrowserWidget(this);
     browserFrame->add(m_browserWidget);
-    browserFrame->add(m_vScrollBar = new ScrollBar(this));
+    browserFrame->add(m_vScrollBar = new ScrollBar(this, false));
     m_tab->add(browserFrame);
     m_tab->add(m_statusLabel = new Label(this, L"", ALIGN_LEFT));
     setContent(m_tabs);
@@ -84,12 +85,32 @@ void NetSurfWindow::setURL(nsurl* url)
     m_urlBar->setText(wstr);
 }
 
-void NetSurfWindow::setExtent(int x, int y)
+void NetSurfWindow::setIcon(Surface* surface)
 {
-m_vScrollBar->set(0, y, m_browserWidget->getSize().height);
+    Tab* tab = m_tabs->getTab(m_tab);
+    if (tab == NULL)
+    {
+        return;
+    }
+
+    Icon* icon = NULL;
+    if (surface != NULL)
+    {
+        icon = new SurfaceIcon(getApp()->getTheme(), surface);
+    }
+    else
+    {
+        icon = getApp()->getTheme()->getIcon(FRONTIER_ICON_PAGE4);
+    }
+    tab->setIcon(icon);
 }
 
-void NetSurfWindow::onBackButton()
+void NetSurfWindow::setExtent(int x, int y)
+{
+    m_vScrollBar->set(0, y, m_browserWidget->getSize().height);
+}
+
+void NetSurfWindow::onBackButton(Widget* widget)
 {
     if (browser_window_back_available(m_bw))
     {
@@ -99,7 +120,6 @@ void NetSurfWindow::onBackButton()
 
 void NetSurfWindow::onScrollV(int pos)
 {
-log(DEBUG, "onScrollV: pos=%d", pos);
     browser_window_scroll_at_point(m_bw, 0, pos, 0, 1);
 }
 

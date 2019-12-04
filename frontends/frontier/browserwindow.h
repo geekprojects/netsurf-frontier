@@ -44,10 +44,11 @@ class NetSurfWindow : public Frontier::FrontierWindow
     void setURL(nsurl* url);
     void setTitle(std::wstring title);
     void setStatus(std::wstring title);
+    void setIcon(Geek::Gfx::Surface* surface);
 
     void setExtent(int x, int y);
 
-    void onBackButton();
+    void onBackButton(Frontier::Widget* widget);
     void onScrollV(int pos);
 };
 

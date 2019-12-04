@@ -12,8 +12,8 @@ using namespace Geek;
 using namespace Geek::Gfx;
 using namespace std;
 
-#define RGB2BGR(a_ulColor) (a_ulColor & 0xFF000000) | ((a_ulColor & 0xFF0000) >> 16) | (a_ulColor & 0x00FF00) | ((a_ulColor & 0x0000FF) << 16)
-
+//#define RGB2BGR(a_ulColor) (a_ulColor & 0xFF000000) | ((a_ulColor & 0xFF0000) >> 16) | (a_ulColor & 0x00FF00) | ((a_ulColor & 0x0000FF) << 16)
+#define RGB2BGR(a_ulColor) ((0xFF000000) | ((a_ulColor & 0xFF0000) >> 16) | (a_ulColor & 0x00FF00) | ((a_ulColor & 0x0000FF) << 16))
 
 nserror frontier_plotter_clip(const struct redraw_context *ctx, const struct rect *clip)
 {
@@ -24,7 +24,7 @@ nserror frontier_plotter_clip(const struct redraw_context *ctx, const struct rec
     }
     else
     {
-        printf("XXX: frontier_plotter_clip\n");
+        printf("XXX: frontier_plotter_clip: none\n");
     }
 #endif
 
@@ -42,6 +42,45 @@ nserror frontier_plotter_arc(
 {
     printf("XXX: frontier_plotter_arc\n");
 
+    if (angle2 < angle1)
+    {
+        angle2 += 360;
+    }
+
+    float angle1_r = (float)(angle1) * (M_PI / 180.0);
+    float angle2_r = (float)(angle2) * (M_PI / 180.0);
+    float angle, b, c;
+    float step = 0.1;
+
+    int x0 = x;
+    int y0 = y;
+
+    b = angle1_r;
+    c = angle2_r;
+
+    int x1 = (int)(cos(b) * (float)radius);
+    int y1 = (int)(sin(b) * (float)radius);
+
+    int prevX = x0 + x1;
+    int prevY = y0 + y1;
+
+    PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
+    for(angle = (b + step); angle <= c; angle += step)
+    {
+        x1 = (int)(cos(angle) * (float)radius);
+        y1 = (int)(sin(angle) * (float)radius);
+
+        int dx = x0 + x1;
+        int dy = y0 + y1;
+
+        plotterCtx->surface->drawLine(
+            prevX, prevY,
+            dx, dy,
+            RGB2BGR(pstyle->stroke_colour));
+        prevX = dx;
+        prevY = dy;
+    }
+
     return NSERROR_OK;
 }
 
@@ -53,6 +92,8 @@ nserror frontier_plotter_disc(
     int radius)
 {
     printf("XXX: frontier_plotter_disc\n");
+    PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
+    plotterCtx->surface->drawCircle(x, y, radius, RGB2BGR(pstyle->stroke_colour));
 
     return NSERROR_OK;
 }
@@ -64,6 +105,12 @@ nserror frontier_plotter_line(
 {
     printf("XXX: frontier_plotter_line\n");
 
+    PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
+    plotterCtx->surface->drawLine(
+        line->x0, line->y0,
+        line->x1, line->y1,
+        RGB2BGR(pstyle->stroke_colour));
+
     return NSERROR_OK;
 }
 
@@ -72,7 +119,9 @@ nserror frontier_plotter_rectangle(
     const plot_style_t *pstyle,
     const struct rect *rectangle)
 {
+#if 0
     printf("XXX: frontier_plotter_rectangle: %d, %d -> %d, %d\n", rectangle->x0, rectangle->y0, rectangle->x1, rectangle->y1);
+#endif
 
     PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
     int w = (rectangle->x1 - rectangle->x0) + 1;
@@ -212,7 +261,10 @@ nserror frontier_plotter_bitmap(
     bitmap_flags_t flags)
 {
     PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
+
+#if 0
     printf("XXX: frontier_plotter_bitmap: %p\n", bitmap);
+#endif
 
     Surface* surface = (Surface*)bitmap;
 
@@ -256,8 +308,13 @@ nserror frontier_plotter_text(
     FontHandle* font = plotterCtx->app->createFontHandle(fstyle);
     y -= font->getPixelHeight(72);
 
+    Surface* surface = plotterCtx->surface;
     uint32_t c = RGB2BGR(fstyle->foreground);// & 0xffffff;
-    plotterCtx->app->getFontManager()->write(font, plotterCtx->surface, x, y, wstr, c, true, NULL);
+
+    if (x > 0 && x < (int)surface->getWidth() && y > 0 && y < (int)surface->getHeight())
+    {
+        plotterCtx->app->getFontManager()->write(font, surface, x, y, wstr, c, true, NULL);
+    }
 
     return NSERROR_OK;
 }
@@ -275,7 +332,7 @@ const struct plotter_table frontier_plotter_table =
         .arc = frontier_plotter_arc,
         .bitmap = frontier_plotter_bitmap,
         .path = frontier_plotter_path,
-        //.option_knockout = true,
+        //.option_knockout = true
 };
 
 
