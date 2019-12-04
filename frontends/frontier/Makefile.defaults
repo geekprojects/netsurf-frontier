@@ -26,5 +26,7 @@ NETSURF_USE_HARU_PDF := NO
 # Valid options: YES, NO
 NETSURF_USE_LIBICONV_PLUG := NO
 
+NETSURF_FS_BACKING_STORE := YES
+
 # Optimisation levels
-CFLAGS += -pipe -O2
+CFLAGS += -pipe -O2 -std=c++14
