@@ -18,9 +18,14 @@ using namespace std;
 nserror frontier_plotter_clip(const struct redraw_context *ctx, const struct rect *clip)
 {
 #if 0
+    PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
     if (clip != NULL)
     {
         printf("XXX: frontier_plotter_clip:  -> %d, %d -> %d, %d\n", clip->x0, clip->y0, clip->x1, clip->y1);
+        plotterCtx->clip.x = clip->x0;
+        plotterCtx->clip.y = clip->y0;
+        plotterCtx->clip.width = clip->x1 - clip->x0;
+        plotterCtx->clip.height = clip->y1 - clip->y0;
     }
     else
     {
@@ -103,7 +108,9 @@ nserror frontier_plotter_line(
     const plot_style_t *pstyle,
     const struct rect *line)
 {
+#if 0
     printf("XXX: frontier_plotter_line\n");
+#endif
 
     PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
     plotterCtx->surface->drawLine(
@@ -127,14 +134,30 @@ nserror frontier_plotter_rectangle(
     int w = (rectangle->x1 - rectangle->x0) + 1;
     int h = (rectangle->y1 - rectangle->y0) + 1;
 
-    switch (pstyle->fill_type)
+    if (pstyle->fill_type != PLOT_OP_TYPE_NONE)
     {
-        case PLOT_OP_TYPE_SOLID:
-            plotterCtx->surface->drawRectFilled(rectangle->x0, rectangle->y0, w, h, RGB2BGR(pstyle->fill_colour));
-            break;
-        default:
-            printf("XXX: frontier_plotter_rectangle:  -> Unhandled fill_type: %d\n", pstyle->fill_type);
-            break;
+        switch (pstyle->fill_type)
+        {
+            case PLOT_OP_TYPE_SOLID:
+                plotterCtx->surface->drawRectFilled(rectangle->x0, rectangle->y0, w, h, RGB2BGR(pstyle->fill_colour));
+                break;
+            default:
+                printf("XXX: frontier_plotter_rectangle:  -> Unhandled fill_type: %d\n", pstyle->fill_type);
+                break;
+        }
+    }
+
+    if (pstyle->stroke_type != PLOT_OP_TYPE_NONE)
+    {
+        switch (pstyle->stroke_type)
+        {
+            case PLOT_OP_TYPE_SOLID:
+                plotterCtx->surface->drawRect(rectangle->x0, rectangle->y0, w, h, RGB2BGR(pstyle->stroke_colour));
+                break;
+            default:
+                printf("XXX: frontier_plotter_rectangle:  -> Unhandled stroke_type: %d\n", pstyle->stroke_type);
+                break;
+        }
     }
 
     return NSERROR_OK;
@@ -263,7 +286,7 @@ nserror frontier_plotter_bitmap(
     PlotterContext* plotterCtx = (PlotterContext*)(ctx->priv);
 
 #if 0
-    printf("XXX: frontier_plotter_bitmap: %p\n", bitmap);
+    printf("XXX: frontier_plotter_bitmap: x=%d, y=%d, width=%d, height=%d\n", x, y, width, height);
 #endif
 
     Surface* surface = (Surface*)bitmap;
@@ -311,28 +334,22 @@ nserror frontier_plotter_text(
     Surface* surface = plotterCtx->surface;
     uint32_t c = RGB2BGR(fstyle->foreground);// & 0xffffff;
 
-    if (x > 0 && x < (int)surface->getWidth() && y > 0 && y < (int)surface->getHeight())
-    {
-        plotterCtx->app->getFontManager()->write(font, surface, x, y, wstr, c, true, NULL);
-    }
+    plotterCtx->app->getFontManager()->write(font, surface, x, y, wstr, c, true, NULL);
 
     return NSERROR_OK;
 }
 
-
-
 const struct plotter_table frontier_plotter_table =
 {
-        .rectangle = frontier_plotter_rectangle,
-        .line = frontier_plotter_line,
-        .polygon = frontier_plotter_polygon,
-        .clip = frontier_plotter_clip,
-        .text = frontier_plotter_text,
-        .disc = frontier_plotter_disc,
-        .arc = frontier_plotter_arc,
-        .bitmap = frontier_plotter_bitmap,
-        .path = frontier_plotter_path,
-        //.option_knockout = true
+    .rectangle = frontier_plotter_rectangle,
+    .line = frontier_plotter_line,
+    .polygon = frontier_plotter_polygon,
+    .clip = frontier_plotter_clip,
+    .text = frontier_plotter_text,
+    .disc = frontier_plotter_disc,
+    .arc = frontier_plotter_arc,
+    .bitmap = frontier_plotter_bitmap,
+    .path = frontier_plotter_path
 };
 
 

@@ -21,6 +21,7 @@ struct PlotterContext
 {
     Geek::Gfx::Surface* surface;
     NetSurfApp* app;
+    Frontier::Rect clip;
 };
 
 extern const struct plotter_table frontier_plotter_table;
@@ -29,12 +30,15 @@ struct gui_window
 {
     NetSurfWindow* window;
     struct browser_window* bw;
+
+    Geek::Rect caretRect;
 };
 
 class NetSurfApp : public Frontier::FrontierApp
 {
  private:
     Geek::Core::TimerManager* m_timerManager;
+    std::map<std::string, Geek::FontHandle*> m_fontCache;
 
  public:
     NetSurfApp();
@@ -47,8 +51,6 @@ class NetSurfApp : public Frontier::FrontierApp
     struct gui_window* createWindow(struct browser_window *bw, struct gui_window *existing, gui_window_create_flags flags);
 
     Geek::FontHandle* createFontHandle(const struct plot_font_style *fstyle);
-
-    nserror layoutWidth(const struct plot_font_style *fstyle, const char *string, size_t length, int *width);
 };
 
 extern NetSurfApp* g_frontierApp;

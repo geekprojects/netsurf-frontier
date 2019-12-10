@@ -30,7 +30,6 @@ extern "C" {
 #include "desktop/download.h"
 #include "netsurf/download.h"
 #include "netsurf/bitmap.h"
-#include "netsurf/layout.h"
 #include "netsurf/plotters.h"
 
 nserror netsurf_path_to_nsurl(const char *path, struct nsurl **url);
@@ -38,6 +37,10 @@ nserror netsurf_path_to_nsurl(const char *path, struct nsurl **url);
 
 #include <frontier/utils.h>
 #include <geek/core-string.h>
+
+#include "misc.h"
+#include "layout.h"
+#include "bitmap.h"
 
 using namespace std;
 using namespace Geek;
@@ -191,200 +194,27 @@ FontHandle* NetSurfApp::createFontHandle(const struct plot_font_style *fstyle)
 
     int size = fstyle->size >> PLOT_STYLE_RADIX;
 
-#if 0
-    log(DEBUG, "createFontHandle: fontName=%s, size=%d, weight=%d, style=%s", fontName.c_str(), size, fstyle->weight, style.c_str());
-#endif
+    char buf[1024];
+    snprintf(buf, 1024, "%s::%s::%d", fontName.c_str(), style.c_str(), size);
+    string fontSignature = string(buf);
 
-    return getFontManager()->openFont(fontName, style, size);
-}
-
-nserror NetSurfApp::layoutWidth(const struct plot_font_style *fstyle, const char *cstr, size_t length, int *width)
-{
-    log(DEBUG, "layout_width: string=%p, length=%d", cstr, length);
-
-    if (cstr == NULL)
+    auto it = m_fontCache.find(fontSignature);
+    if (it != m_fontCache.end())
     {
-        *width = 0;
-        return NSERROR_OK;
-    }
-
-    FontHandle* font = createFontHandle(fstyle);
-
-    wstring wstr = Geek::Core::utf82wstring(cstr, length);
-    *width = getFontManager()->width(font, wstr);
-    log(DEBUG, "layout_width: width=%d", *width);
-
-    delete font;
-
-    return NSERROR_OK;
-}
-
-nserror frontier_schedule(int t, void (*callback)(void *p), void *p)
-{
-    g_frontierApp->schedule(t, callback, p);
-
-    return NSERROR_OK;
-}
-
-nserror frontier_warning(const char *message, const char *detail)
-{
-    printf("XXX: frontier_warning: %s (%s)\n", message, detail);
-    Frontier::Utils::stacktrace();
-
-    return NSERROR_NOT_IMPLEMENTED;
-}
-
-// Required
-static struct gui_misc_table frontier_misc_table = {
-        frontier_schedule,
-        frontier_warning,
-        NULL, //gui_quit,
-        NULL, //gui_launch_url,
-        NULL, //cert_verify
-        NULL, //gui_401login_open,
-        NULL, // pdf_password (if we have Haru support)
-};
-
-struct gui_window* frontier_window_create(struct browser_window *bw, struct gui_window *existing, gui_window_create_flags flags)
-{
-    printf("XXX: frontier_window_create\n");
-    return g_frontierApp->createWindow(bw, existing, flags);
-}
-
-void frontier_window_destroy(struct gui_window *gw)
-{
-    printf("XXX: frontier_window_destroy\n");
-}
-
-nserror frontier_window_invalidate(struct gui_window *gw, const struct rect *rect)
-{
-    printf("XXX: frontier_window_invalidate\n");
-    gw->window->getBrowserWidget()->setDirty(DIRTY_CONTENT);
-    gw->window->requestUpdate();
-
-    return NSERROR_OK;
-}
-
-bool frontier_window_get_scroll(struct gui_window *gw, int *sx, int *sy)
-{
-    printf("XXX: frontier_window_get_scroll\n");
-    return false;
-}
-
-nserror frontier_window_set_scroll(struct gui_window *gw, const struct rect *rect)
-{
-    printf("XXX: frontier_window_set_scroll\n");
-    return NSERROR_OK;
-}
-
-nserror frontier_window_get_dimensions(struct gui_window *gw, int *width, int *height, bool scaled)
-{
-    BrowserWidget* widget = gw->window->getBrowserWidget();
-
-    Size size = widget->getSize();
-    *width = size.width;
-    *height = size.height;
-    printf("XXX: frontier_window_get_dimensions: %d, %d\n", *width, *height);
-
-    return NSERROR_OK;
-}
-
-void frontier_window_update_extent(struct gui_window *gw)
-{
-    int maxX;
-    int maxY;
-    int err;
-    err = browser_window_get_extents(gw->window->getBW(), true, &maxX, &maxY);
-    printf("XXX: frontier_window_update_extent: maxX=%d, maxY=%d\n", maxX, maxY);
-    if (err != NSERROR_OK)
-    {
-        return;
-    }
-
-    gw->window->setExtent(maxX, maxY);
-}
-
-void frontier_window_set_title(struct gui_window *gw, const char *title)
-{
-    wstring wstr = Geek::Core::utf82wstring(title);
-
-    gw->window->setTitle(wstr);
-}
-
-nserror frontier_window_set_url(struct gui_window *gw, struct nsurl *url)
-{
-    gw->window->setURL(url);
-    return NSERROR_OK;
-}
-
-void frontier_window_set_icon(struct gui_window *gw, struct hlcache_handle *icon)
-{
-    printf("XXX: frontier_window_set_icon: icon=%p\n", icon);
-
-    if (icon != NULL)
-    {
-        struct bitmap *icon_bitmap = NULL;
-        icon_bitmap = content_get_bitmap(icon);
-        printf("XXX: frontier_window_set_icon: icon_bitmap=%p\n", icon_bitmap);
-
-        Surface* surface = (Surface*)icon_bitmap;
-        gw->window->setIcon(surface);
+        return it->second;
     }
     else
     {
-        printf("XXX: frontier_window_set_icon: Clearing icon\n");
-        gw->window->setIcon(NULL);
+        FontHandle* handle = getFontManager()->openFont(fontName, style, size);
+#if 1
+        log(DEBUG, "createFontHandle: fontName=%s, size=%d, weight=%d, style=%s", fontName.c_str(), size, fstyle->weight, style.c_str());
+#endif
+
+        m_fontCache.insert(make_pair(fontSignature, handle));
+
+        return handle;
     }
 }
-
-void frontier_window_set_status(struct gui_window *gw, const char *text)
-{
-    wstring wstr = Geek::Core::utf82wstring(text);
-
-    gw->window->setStatus(wstr);
-}
-
-void frontier_console_log(
-    struct gui_window *gw,
-    browser_window_console_source src,
-    const char *msg,
-    size_t msglen,
-    browser_window_console_flags flags)
-{
-    printf("XXX: frontier_console_log: %s\n", msg);
-}
-
-// Required
-static struct gui_window_table frontier_window_table = {
-        frontier_window_create,
-        frontier_window_destroy,
-        frontier_window_invalidate,
-        frontier_window_get_scroll,
-        frontier_window_set_scroll,
-        frontier_window_get_dimensions,
-        frontier_window_update_extent,
-
-        /* from scaffold */
-        frontier_window_set_title,
-        frontier_window_set_url,
-        frontier_window_set_icon,
-        frontier_window_set_status,
-        NULL, //gui_window_set_pointer,
-        NULL, //gui_window_place_caret,
-        NULL, //gui_window_remove_caret,
-        NULL, //gui_window_start_throbber,
-        NULL, //gui_window_stop_throbber,
-        NULL, //drag_start
-        NULL, //save_link
-        NULL, //scroll_start
-        NULL, //gui_window_new_content,
-        NULL, //create_form_select_menu
-        NULL, //file_gadget_open
-        NULL, //drag_save_object
-        NULL, //drag_save_selection
-        NULL, //gui_start_selection
-        frontier_console_log  //console_log
-};
 
 /*
 static struct gui_download_table frontier_download_table =
@@ -432,9 +262,13 @@ const char* frontier_fetch_filetype(const char *unix_path)
     {
         return "text/javascript";
     }
-    else
+    else if (ext == "htm" || ext == "html")
     {
         return "text/html";
+    }
+    else
+    {
+        return "text/plain";
     }
 }
 
@@ -459,230 +293,6 @@ static struct gui_fetch_table frontier_fetch_table = {
         NULL, // fetch_mimetype
 };
 
-void* frontier_bitmap_create(int width, int height, unsigned int state)
-{
-    printf("XXX: frontier_bitmap_create: width=%d, height=%d, state=%d\n", width, height, state);
-    Geek::Gfx::Surface* surface = new Geek::Gfx::Surface(width, height, 4);
-    printf("XXX: frontier_bitmap_create:  -> surface=%p\n", surface);
-
-    return surface;
-}
-
-void frontier_bitmap_destroy(void *bitmap)
-{
-    Geek::Gfx::Surface* surface = (Geek::Gfx::Surface*)bitmap;
-    printf("XXX: frontier_bitmap_destroy\n");
-    delete surface;
-}
-
-void frontier_bitmap_set_opaque(void *bitmap, bool opaque)
-{
-    printf("XXX: frontier_bitmap_set_opaque\n");
-}
-
-bool frontier_bitmap_get_opaque(void *bitmap)
-{
-    printf("XXX: frontier_bitmap_get_opaque\n");
-    return false;
-}
-
-bool frontier_bitmap_test_opaque(void *bitmap)
-{
-    printf("XXX: frontier_bitmap_test_opaque\n");
-    return false;
-}
-
-unsigned char * frontier_bitmap_get_buffer(void *bitmap)
-{
-    printf("XXX: frontier_bitmap_get_buffer\n");
-    Geek::Gfx::Surface* surface = (Geek::Gfx::Surface*)bitmap;
-    return surface->getDrawingBuffer();
-}
-
-size_t frontier_bitmap_get_rowstride(void *bitmap)
-{
-    Geek::Gfx::Surface* surface = (Geek::Gfx::Surface*)bitmap;
-    printf("XXX: frontier_bitmap_get_rowstride\n");
-    return surface->getStride();
-}
-
-int frontier_bitmap_get_width(void *bitmap)
-{
-    Geek::Gfx::Surface* surface = (Geek::Gfx::Surface*)bitmap;
-    printf("XXX: frontier_bitmap_get_width\n");
-    return surface->getWidth();
-}
-
-int frontier_bitmap_get_height(void *bitmap)
-{
-    Geek::Gfx::Surface* surface = (Geek::Gfx::Surface*)bitmap;
-    printf("XXX: frontier_bitmap_get_height\n");
-    return surface->getHeight();
-}
-
-size_t frontier_bitmap_get_bpp(void *bitmap)
-{
-    printf("XXX: frontier_bitmap_get_bpp\n");
-    return 4;
-}
-
-bool frontier_bitmap_save(void *bitmap, const char *path, unsigned flags)
-{
-    printf("XXX: frontier_bitmap_save: path=%s\n", path);
-    return false;
-}
-
-void frontier_bitmap_modified(void *bitmap)
-{
-    printf("XXX: frontier_bitmap_modified\n");
-}
-
-nserror frontier_bitmap_render(struct bitmap *bitmap, struct hlcache_handle *content)
-{
-    printf("XXX: frontier_bitmap_render\n");
-    Geek::Gfx::Surface* surface = (Geek::Gfx::Surface*)bitmap;
-
-    PlotterContext plotterContext;
-    plotterContext.surface = surface;
-    plotterContext.app = g_frontierApp;
-
-    struct redraw_context ctx =
-    {
-        .interactive = false,
-        .background_images = true,
-        .plot = &frontier_plotter_table,
-        .priv = &plotterContext
-    };
-
-    int surfaceWidth = surface->getWidth();
-    int surfaceHeight = surface->getHeight();
-
-    int cwidth = min(max(content_get_width(content), surfaceWidth), 1024);
-
-    /* The height is set in proportion with the width, according to the
-    * aspect ratio of the required thumbnail. */
-    int cheight = ((cwidth * surfaceHeight) + (surfaceWidth / 2)) / surfaceHeight;
-
-    content_scaled_redraw(content, cwidth, cheight, &ctx);
-
-    return NSERROR_OK;
-}
-
-// Required
-static struct gui_bitmap_table frontier_bitmap_table = {
-    .create = frontier_bitmap_create,
-    .destroy = frontier_bitmap_destroy,
-    .set_opaque = frontier_bitmap_set_opaque,
-    .get_opaque = frontier_bitmap_get_opaque,
-    .test_opaque = frontier_bitmap_test_opaque,
-    .get_buffer = frontier_bitmap_get_buffer,
-    .get_rowstride = frontier_bitmap_get_rowstride,
-    .get_width = frontier_bitmap_get_width,
-    .get_height = frontier_bitmap_get_height,
-    .get_bpp = frontier_bitmap_get_bpp,
-    .save = frontier_bitmap_save,
-    .modified = frontier_bitmap_modified,
-    .render = frontier_bitmap_render,
-};
-
-nserror frontier_layout_width(const struct plot_font_style *fstyle, const char *string, size_t length, int *width)
-{
-    g_frontierApp->layoutWidth(fstyle, string, length, width);
-    return NSERROR_OK;
-}
-
-nserror frontier_layout_position(const struct plot_font_style *fstyle, const char* text, size_t length, int x, size_t *char_offset, int *actual_x)
-{
-    printf("XXX: frontier_layout_position\n");
-    FontHandle* font = g_frontierApp->getTheme()->getFont(true);
-
-    string str = string(text, length);
-    wstring wstr = Frontier::Utils::string2wstring(str);
-
-    FontManager* fm = g_frontierApp->getFontManager();
-
-    size_t pos = 1;
-    int width = 0;
-    for (pos = 1; pos < length; pos++)
-    {
-        wstring currentStr = wstr.substr(0, pos);
-        int currentWidth = fm->width(font, currentStr);
-        printf("XXX: frontier_layout_position: pos=%zu, currentWidth=%d: %ls\n", pos, currentWidth, currentStr.c_str());
-
-        if (currentWidth > x)
-        {
-            pos--;
-            break;
-        }
-
-        width = currentWidth;
-    }
-
-    *char_offset = pos;
-    *actual_x = width;
-
-    return NSERROR_OK;
-}
-
-nserror frontier_layout_split(const struct plot_font_style *fstyle, const char* text, size_t length, int x, size_t *char_offset, int *actual_x)
-{
-    wstring wstr = Geek::Core::utf82wstring(text, length);
-
-#if 0
-    printf("XXX: frontier_layout_split: length=%zu, x=%d: %ls\n", length, x, wstr.c_str());
-#endif
-
-    FontManager* fm = g_frontierApp->getFontManager();
-    FontHandle* font = g_frontierApp->createFontHandle(fstyle);
-
-    size_t pos = 1;
-    int currentX = 0;
-    int lastSpacePos =  0;
-    int lastSpaceX =  0;
-    for (pos = 0; pos < wstr.length(); pos++)
-    {
-        if (wstr[pos] == ' ')
-        {
-            lastSpaceX = currentX;
-            lastSpacePos = pos;
-        }
-
-        if (currentX >= x)
-        {
-            if (lastSpacePos != 0)
-            {
-                *actual_x = lastSpaceX;
-                *char_offset = lastSpacePos;
-            }
-            else
-            {
-                *actual_x = currentX;
-                *char_offset = pos;
-            }
-
-            delete font;
-            return NSERROR_OK;
-        }
-
-        wstring currentStr = wstr.substr(0, pos);
-        currentX = fm->width(font, currentStr);
-    }
-
-    *char_offset = pos;
-    *actual_x = currentX;
-
-    delete font;
-
-    return NSERROR_OK;
-}
-
-// Required
-static struct gui_layout_table frontier_layout_table = {
-    .width = frontier_layout_width,
-    .position = frontier_layout_position,
-    .split = frontier_layout_split
-};
-
 /**
  * Ensures output logging stream is correctly configured
  */
@@ -696,7 +306,7 @@ static bool nslog_stream_configure(FILE *fptr)
 
 static nserror set_defaults(struct nsoption_s *defaults)
 {
-    nsoption_set_bool(enable_javascript, true);
+    //nsoption_set_bool(enable_javascript, true);
     return NSERROR_OK;
 }
 
@@ -737,8 +347,8 @@ int main(int argc, char** argv)
     nserror ret;
     struct netsurf_table frontier_table =
     {
-        &frontier_misc_table,
-        &frontier_window_table,
+        &g_frontier_misc_table,
+        &g_frontier_window_table,
         NULL, //&frontier_download_table,
         NULL, //&frontier_clipboard_table,
         &frontier_fetch_table,
@@ -747,8 +357,8 @@ int main(int argc, char** argv)
         NULL, /* default search */
         NULL, /* default web search */
         filesystem_llcache_table, /* default low level cache persistant storage */
-        &frontier_bitmap_table,
-        &frontier_layout_table
+        &g_frontier_bitmap_table,
+        &g_frontier_layout_table
     };
 
     ret = netsurf_register(&frontier_table);
@@ -774,8 +384,12 @@ int main(int argc, char** argv)
     //nsoption_read(options.Path(), NULL);
     nsoption_commandline(&argc, argv, NULL);
 
-    nsoption_set_bool(enable_javascript, true);
-    ret = netsurf_init(NULL);
+    //nsoption_set_bool(enable_javascript, true);
+
+    string configDir = g_frontierApp->getConfigDir();
+
+    string storeDir = configDir + "/store";
+    ret = netsurf_init(storeDir.c_str());
     if (ret != NSERROR_OK)
     {
         // FIXME: must not die when in replicant!
@@ -783,7 +397,14 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+  string cookiesfile = configDir + "/cookies";
+  nsoption_setnull_charp(cookie_file, (char *)strdup(cookiesfile.c_str()));
+
+    urldb_load_cookies(nsoption_charp(cookie_file));
+
     gui_init(argc, argv);
+
+    urldb_save_cookies(nsoption_charp(cookie_file));
 
     netsurf_exit();
 

@@ -32,7 +32,7 @@ PACKAGER := $(shell git config --get user.name) <$(shell git config --get user.e
 # ----------------------------------------------------------------------------
 
 # sources purely for the Frontier build
-S_FRONTEND := gui.cpp browserwindow.cpp plotters.cpp
+S_FRONTEND := gui.cpp browserwindow.cpp browserwidget.cpp plotters.cpp misc.cpp layout.cpp bitmap.cpp
 
 # This is the final source build list
 # Note this is deliberately *not* expanded here as common and image

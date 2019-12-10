@@ -17,6 +17,8 @@ extern "C" {
 class NetSurfApp;
 class BrowserWidget;
 
+extern struct gui_window_table g_frontier_window_table;
+
 class NetSurfWindow : public Frontier::FrontierWindow
 {
  private:
@@ -46,27 +48,12 @@ class NetSurfWindow : public Frontier::FrontierWindow
     void setStatus(std::wstring title);
     void setIcon(Geek::Gfx::Surface* surface);
 
+    void newContent();
     void setExtent(int x, int y);
 
     void onBackButton(Frontier::Widget* widget);
     void onScrollV(int pos);
+    void onAddressEntered(Frontier::TextInput* widget);
 };
-
-class BrowserWidget : public Frontier::Widget
-{
- private:
-    Geek::Mutex* m_drawMutex;
-
- public:
-    BrowserWidget(Frontier::FrontierWindow* window);
-    virtual ~BrowserWidget();
-
-    virtual void calculateSize();
-    virtual void layout();
-    virtual bool draw(Geek::Gfx::Surface* surface);
-
-    virtual Widget* handleEvent(Frontier::Event* event);
-};
-
 
 #endif
