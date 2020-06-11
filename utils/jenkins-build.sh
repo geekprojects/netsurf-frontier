@@ -51,6 +51,9 @@ ATARIARCH=68020-60
 # make tool
 MAKE=make
 
+# NetSurf version number haiku needs it for package name
+NETSURF_VERSION="3.11"
+
 # Ensure the combination of target and toolchain works and set build
 #   specific parameters too
 case ${TARGET} in
@@ -82,7 +85,7 @@ case ${TARGET} in
 
 	esac
 
-	PKG_SRC=netsurf_x86-3.10-1-x86_gcc2
+	PKG_SRC="netsurf_x86-${NETSURF_VERSION}-1-x86_gcc2"
 	PKG_SFX=.hpkg
 	;;
 
@@ -191,7 +194,7 @@ case ${TARGET} in
 	;;
 
 
-    "gtk")
+    "gtk2")
 	case ${HOST} in
 	    "x86_64-linux-gnu")
 		;;
@@ -219,7 +222,7 @@ case ${TARGET} in
 
 	IDENTIFIER="${HOST}-${IDENTIFIER}"
 	OLD_IDENTIFIER="${HOST}-${OLD_IDENTIFIER}"
-	PKG_SRC=nsgtk
+	PKG_SRC=nsgtk2
 	PKG_SFX=
 	;;
 
