@@ -51,19 +51,19 @@ bool NetSurfWindow::init()
     m_tab->add(navFrame);
 
     IconButton* backButton;
-    navFrame->add(backButton = new IconButton(this, getApp()->getTheme()->getIcon(FRONTIER_ICON_BACKWARD)));
-    navFrame->add(new IconButton(this, getApp()->getTheme()->getIcon(FRONTIER_ICON_FORWARD)));
-    navFrame->add(m_urlBar = new TextInput(this, L""));
+    navFrame->add(backButton = new IconButton(getApp(), getApp()->getTheme()->getIcon(FRONTIER_ICON_BACKWARD)));
+    navFrame->add(new IconButton(getApp(), getApp()->getTheme()->getIcon(FRONTIER_ICON_FORWARD)));
+    navFrame->add(m_urlBar = new TextInput(getApp(), L""));
     m_urlBar->signalEditingEnd().connect(sigc::mem_fun(*this, &NetSurfWindow::onAddressEntered));
 
     backButton->clickSignal().connect(sigc::mem_fun(*this, &NetSurfWindow::onBackButton));
 
-    Frame* browserFrame = new Frame(this, true);
+    Frame* browserFrame = new Frame(getApp(), true);
     m_browserWidget = new BrowserWidget(this);
     browserFrame->add(m_browserWidget);
-    browserFrame->add(m_vScrollBar = new ScrollBar(this, false));
+    browserFrame->add(m_vScrollBar = new ScrollBar(getApp(), false));
     m_tab->add(browserFrame);
-    m_tab->add(m_statusLabel = new Label(this, L"", ALIGN_LEFT));
+    m_tab->add(m_statusLabel = new Label(getApp(), L"", ALIGN_LEFT));
     setContent(m_tabs);
 
     m_vScrollBar->changedPositionSignal().connect(sigc::mem_fun(*this, &NetSurfWindow::onScrollV));

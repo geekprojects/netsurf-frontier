@@ -174,13 +174,7 @@ nserror frontier_plotter_polygon(
     return NSERROR_OK;
 }
 
-struct Vector
-{
-    float x;
-    float y;
-};
-
-static void frontier_bezier(Vector& a, Vector& b, Vector& c, Vector& d, double t, Vector& p)
+static void frontier_bezier(Vector2D& a, Vector2D& b, Vector2D& c, Vector2D& d, double t, Vector2D& p)
 {
     p.x = pow((1 - t), 3) * a.x + 3 * t * pow((1 -t), 2) * b.x + 3 * (1-t) * pow(t, 2)* c.x + pow (t, 3)* d.x;
     p.y = pow((1 - t), 3) * a.y + 3 * t * pow((1 -t), 2) * b.y + 3 * (1-t) * pow(t, 2)* c.y + pow (t, 3)* d.y;
@@ -197,8 +191,8 @@ nserror frontier_plotter_path(
     printf("XXX: frontier_plotter_path: n=%u\n", n);
 
     unsigned int i;
-    Vector current;
-    Vector start;
+    Vector2D current;
+    Vector2D start;
     for (i = 0; i < n;)
     {
         int command = p[i];
@@ -219,7 +213,7 @@ nserror frontier_plotter_path(
 
             case PLOTTER_PATH_LINE:
             {
-                Vector position;
+                Vector2D position;
                 position.x = p[i + 1];
                 position.y = p[i + 2];
                 plotterCtx->surface->drawLine(current.x, current.y, position.x, position.y, RGB2BGR(pstyle->stroke_colour));
@@ -229,10 +223,10 @@ nserror frontier_plotter_path(
 
             case PLOTTER_PATH_BEZIER:
             {
-                Vector a;
-                Vector b;
-                Vector c;
-                Vector r;
+                Vector2D a;
+                Vector2D b;
+                Vector2D c;
+                Vector2D r;
 
                 a.x = p[i + 1];
                 a.y = p[i + 2];

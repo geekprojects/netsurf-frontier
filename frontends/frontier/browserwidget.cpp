@@ -190,13 +190,14 @@ Widget* BrowserWidget::handleEvent(Frontier::Event* event)
                 mouseMotionEvent->x - pos.x,
                 (mouseMotionEvent->y - pos.y) + scrollY);
 
-            //setDirty(DIRTY_CONTENT);
+            setDirty(DIRTY_CONTENT);
             return this;
         }
 
 
         case FRONTIER_EVENT_MOUSE_SCROLL:
             window->getScrollBarV()->handleEvent(event);
+            setDirty(DIRTY_CONTENT);
             return this;
 
         case FRONTIER_EVENT_KEY:
