@@ -20,7 +20,7 @@ nserror frontier_warning(const char *message, const char *detail)
 struct gui_misc_table g_frontier_misc_table =
 {
     frontier_schedule,
-    frontier_warning,
+    //frontier_warning,
     NULL, //gui_quit,
     NULL, //gui_launch_url,
     NULL, //cert_verify

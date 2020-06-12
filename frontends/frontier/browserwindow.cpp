@@ -188,7 +188,7 @@ nserror frontier_window_set_scroll(struct gui_window *gw, const struct rect *rec
     return NSERROR_OK;
 }
 
-nserror frontier_window_get_dimensions(struct gui_window *gw, int *width, int *height, bool scaled)
+nserror frontier_window_get_dimensions(struct gui_window *gw, int *width, int *height)
 {
     BrowserWidget* widget = gw->window->getBrowserWidget();
 
@@ -213,6 +213,27 @@ void frontier_window_update_extent(struct gui_window *gw)
     }
 
     gw->window->setExtent(maxX, maxY);
+}
+
+void frontier_window_new_content(struct gui_window *gw);
+
+nserror frontier_window_event(struct gui_window *gw, enum gui_window_event event)
+{
+    switch (event)
+    {
+        case GW_EVENT_UPDATE_EXTENT:
+            frontier_window_update_extent(gw);
+            return NSERROR_OK;
+
+        case GW_EVENT_NEW_CONTENT:
+            frontier_window_new_content(gw);
+            return NSERROR_OK;
+
+
+        default:
+            printf("XXX: frontier_window_event: Unknown event: %d\n", event);
+            return NSERROR_OK;
+    }
 }
 
 void frontier_window_set_title(struct gui_window *gw, const char *title)
@@ -323,7 +344,8 @@ struct gui_window_table g_frontier_window_table =
     frontier_window_get_scroll,
     frontier_window_set_scroll,
     frontier_window_get_dimensions,
-    frontier_window_update_extent,
+    //frontier_window_update_extent,
+    frontier_window_event,
 
     /* from scaffold */
     frontier_window_set_title,
@@ -332,18 +354,17 @@ struct gui_window_table g_frontier_window_table =
     frontier_window_set_status,
     frontier_window_set_pointer,
     frontier_window_place_caret,
-    frontier_window_remove_caret,
-    NULL, //gui_window_start_throbber,
-    NULL, //gui_window_stop_throbber,
+    //frontier_window_remove_caret,
+    //NULL, //gui_window_start_throbber,
+    //NULL, //gui_window_stop_throbber,
     NULL, //drag_start
     NULL, //save_link
-    NULL, //scroll_start
-    frontier_window_new_content,
+    //NULL, //scroll_start
+    //frontier_window_new_content,
     NULL, //create_form_select_menu
     NULL, //file_gadget_open
     NULL, //drag_save_object
     NULL, //drag_save_selection
-    NULL, //gui_start_selection
     frontier_console_log  //console_log
 };
 
